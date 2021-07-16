@@ -22,9 +22,11 @@ var DCMProfileID = 'DCMProfileID';
 var AUTO_POP_HEADER_COLOR = '#a4c2f4';
 var USER_INPUT_HEADER_COLOR = '#b6d7a8';
 var AUTO_POP_CELL_COLOR = 'lightgray';
+var AUTO_ATT_HEADER_COLOR = 'lightgreen'
 
 // Data range values
 var DCMUserProfileID = 'DCMUserProfileID';
+var CreativeFolderID = 'CreativeFolderID';
 
 // sheet names
 var SETUP_SHEET = 'Setup';
@@ -33,7 +35,10 @@ var CAMPAIGNS_SHEET = 'Campaigns';
 var PLACEMENTS_SHEET = 'Placements';
 var ADS_SHEET = 'Ads';
 var CREATIVES_SHEET = 'Creatives';
+var T_CREATIVES_SHEET = 'Tracking Creatives';
 var LANDING_PAGES_SHEET = 'LandingPages';
+var CAMP_CREATIVES_SHEET = 'Campaign Creatives Assocations'
+var ADS_CREATIVES_SHEET = 'Ads Creatives Assignment'
 
 /**
  * Helper function to get DCM Profile ID.
@@ -76,8 +81,12 @@ function setupTabs() {
   _setupCampaignsSheet();
   _setupPlacementsGroupsSheet();
   _setupAdsSheet();
-  _setupCreativesSheet();
   _setupLandingPagesSheet();
+  _setupCreativesSheet(); /** aps: original renamed as _setupCreativesSheet_OLD();*/
+  _setupTCreativesSheet();
+  _setupCCreativesSheet();
+  _setupACreativesSheet();
+  
 }
 
 /**
@@ -165,6 +174,14 @@ function _setupSetupSheet() {
   sheet.getRange('C5').setBackground(USER_INPUT_HEADER_COLOR);
 
   sheet.getRange("B5:C5").setFontWeight("bold").setWrap(true);
+  
+  /** aps: Creative Folder ID should go here */ 
+  sheet.getRange('B7').setValue("Creative Folder ID")
+                      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C7').setBackground(USER_INPUT_HEADER_COLOR);
+
+  sheet.getRange("B7:C7").setFontWeight("bold").setWrap(true);
+  
   return sheet;
 
 }
@@ -235,7 +252,7 @@ function _setupPlacementsGroupsSheet() {
       .setValue('Site ID*')
       .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('D1')
-      .setValue('Comptatibility*')
+      .setValue('Compatibility*')
       .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('E1').setValue('Size*').setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('F1')
@@ -300,7 +317,7 @@ function _setupAdsSheet() {
  * Initialize the Creatives sheet and its header row
  * @return {object} A handle to the sheet.
  */
-function _setupCreativesSheet() {
+function _setupCreativesSheet_OLD() {
   var sheet = initializeSheet_(CREATIVES_SHEET, false);
 
   sheet.getRange('A1')
@@ -330,6 +347,7 @@ function _setupCreativesSheet() {
   return sheet;
 }
 
+
 /**
  * Initialize the LandingPages sheet and its header row
  * @return {object} A handle to the sheet.
@@ -354,4 +372,112 @@ function _setupLandingPagesSheet() {
   return sheet;
 }
 
+/** aps: I mess around with things down here */ 
+
+/**
+ * Initialize the Creatives sheet and its header row
+ * @return {object} A handle to the sheet. */
+function _setupCreativesSheet() {
+  var sheet = initializeSheet_(CREATIVES_SHEET, false);
+
+  sheet.getRange('A1')
+      .setValue('Advertiser ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('B1')
+      .setValue('Creative Name*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C1').setValue('Creative Size ("width"x"height")*').setBackground(
+      USER_INPUT_HEADER_COLOR);
+  sheet.getRange('D1').setValue('Creative Asset Name*').setBackground(
+      USER_INPUT_HEADER_COLOR);
+  sheet.getRange('E1')
+      .setValue('Creative Asset Path (Drive ID)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('F1')
+      .setValue('Creative Backup Image Name*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('G1')
+      .setValue('Creative Backup Image Path (Drive ID)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('H1')
+      .setValue('Creative Backup Image Custom Landing Page URL (optional)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('I1')
+      .setValue('Creative ID (auto-populated; do not edit)')
+      .setBackground(AUTO_POP_HEADER_COLOR);
+
+  sheet.getRange('A1:I1').setFontWeight('bold').setWrap(true);
+  return sheet;
+}
+
+/**
+ * Initialize the Tracking Creatives sheet and its header row
+ * @return {object} A handle to the sheet. */
+ function _setupTCreativesSheet() {
+  var sheet = initializeSheet_(T_CREATIVES_SHEET, false);
+
+  sheet.getRange('A1')
+      .setValue('Advertiser ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('B1')
+      .setValue('Creative Name*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C1')
+      .setValue('Creative ID (auto-populated; do not edit)')
+      .setBackground(AUTO_POP_HEADER_COLOR);
+
+  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
+  return sheet;
+}
+
+/** 
+ * Campaign-Creative Association Sheets
+ * 
+ */
+function _setupCCreativesSheet() {
+  var sheet = initializeSheet_(CAMP_CREATIVES_SHEET, false);
+
+  sheet.getRange('A1')
+      .setValue('Campaign ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('B1')
+      .setValue('Creative ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C1')
+      .setValue('Status (auto-populated; do not edit)')
+      .setBackground(AUTO_POP_HEADER_COLOR);
+
+  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
+  return sheet;
+}
+
+function _setupACreativesSheet() {
+  var sheet = initializeSheet_(ADS_CREATIVES_SHEET, false);
+
+  sheet.getRange('A1')
+      .setValue('Ads ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('B1')
+      .setValue('Creative ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C1')
+      .setValue('Status (auto-populated; do not edit)')
+      .setBackground(AUTO_POP_HEADER_COLOR);
+  sheet.getRange('D1')
+      .setValue('Please Make Sure Ads and Creatives Type Match')
+      .setBackground(AUTO_ATT_HEADER_COLOR);
+
+  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
+  return sheet;
+}
+
+/**
+ * Helper function to get Drive Folder ID containing creatives.
+ * @return {object} Drive Folder ID.
+ */
+function _fetchFolderId() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var range = ss.getRangeByName(CreativeFolderID);
+  return range.getValue();
+}
 

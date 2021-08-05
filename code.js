@@ -26,17 +26,17 @@ function onOpen() {
       .addItem('Setup Sheets', 'setupTabs')
       .addSeparator()
       .addItem('List Sites', 'listSites')
+      .addItem('List Advertisers', 'listAdvertisers')
+      .addItem('List Creative Files','listCreativeFiles')
+      .addItem('List Creatives', 'listCreatives')
+      .addItem('List Landing Pages','listLandingPages')
       .addSeparator()
+      .addItem('Bulk Create Landing Pages', 'createLandingPages')
       .addItem('Bulk Create Campaigns', 'createCampaigns')
       .addItem('Bulk Create Placements', 'createPlacements')
       .addItem('Bulk Create Ads', 'createAds')
-      .addItem('Bulk Create Tracking Creatives', 'createTrackingCreatives')
-      .addItem('Bulk Create Landing Pages', 'createLandingPages')
       .addSeparator()
       .addItem('Upload Creatives', 'uploadCreatives')
-      .addSeparator()
-      .addItem('Campaign <-> Creative', 'createCampCreativeAss')
-      .addItem('Ads <-> Creative', 'createAdsCreativeAss')
       .addToUi();
 }
 
@@ -48,8 +48,6 @@ function listSites() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SITES_SHEET);
   var profileID = _fetchProfileId();
-  initializeSheet_(SITES_SHEET, true);
-
   // setup header row
   sheet.getRange('A1')
       .setValue('Site Name')
@@ -121,30 +119,6 @@ function createPlacements() {
   SpreadsheetApp.getUi().alert('Finished creating the placements!');
 }
 
-
-/**
- * Read campaign ads from the sheet and use DCM API to bulk create them
- * in the DCM Account.
- */
-function createAds() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(ADS_SHEET);
-  var values = sheet.getDataRange().getValues();
-
-  for (var i = 1; i < values.length; i++) { // exclude header row
-    var rowNum = i+1;
-    var status = sheet.getDataRange().getCell(rowNum,9);
-    var first_col = sheet.getDataRange().getCell(rowNum,1);
-    if (!first_col.isBlank() && status.isBlank()){
-    var newAd = _createOneAd(ss, values[i]);
-    sheet.getRange('I' + rowNum)
-        .setValue(newAd.id)
-        .setBackground('lightgray');
-    }
-  }
-
-  SpreadsheetApp.getUi().alert('Finished creating the ads!');
-}
 
 /**
  * Read creatives information from the sheet and use DCM API to bulk create them
@@ -272,6 +246,30 @@ function _createOneCreative(ss, singleCreativeArray){
 }
 
 /**
+ * Read campaign ads from the sheet and use DCM API to bulk create them
+ * in the DCM Account.
+ */
+function createAds() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ADS_SHEET);
+  var values = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < values.length; i++) { // exclude header row
+    var rowNum = i+1;
+    var status = sheet.getDataRange().getCell(rowNum,11);
+    var first_col = sheet.getDataRange().getCell(rowNum,1);
+    if (!first_col.isBlank() && status.isBlank()){
+    var newAd = _createOneAd(ss, values[i]);
+    sheet.getRange('K' + rowNum)
+        .setValue(newAd.id)
+        .setBackground('lightgray');
+    }
+  }
+
+  SpreadsheetApp.getUi().alert('Finished creating the ads!');
+}
+
+/**
  * A helper function which creates one ad via DCM API using information
  * from the sheet.
  * @param {object} ss Spreadsheet class object representing
@@ -280,23 +278,28 @@ function _createOneCreative(ss, singleCreativeArray){
  * @return {object} Ad object
  */
 function _createOneAd(ss, singleAdArray){
-  var profileID = _fetchProfileId();
+  var profileId = _fetchProfileId();
 
   var campaignId = singleAdArray[0];
   var name = singleAdArray[1];
 
   var startTime = Utilities.formatDate(
-      singleAdArray[2], ss.getSpreadsheetTimeZone(),
+      new Date(singleAdArray[2].toString().replace(/\+.*/,'')), /** aps: mental acrobatics */
+      _fetchTZ(),
       'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
 
   var endTime = Utilities.formatDate(
-      singleAdArray[3], ss.getSpreadsheetTimeZone(),
+      new Date(singleAdArray[3].toString().replace(/\+.*/,'')),
+      _fetchTZ(),
       'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\'');
 
   var impressionRatio = singleAdArray[4];
   var priority = singleAdArray[5];
   var type = singleAdArray[6];
   var placementId = singleAdArray[7];
+  var creativeId = singleAdArray[8];
+  var landingPage = singleAdArray[9];
+
 
   //https://developers.google.com/doubleclick-advertisers/v3.1/ads
   //priority requires double digit format even for values lower than 10
@@ -315,13 +318,53 @@ function _createOneAd(ss, singleAdArray){
         "impressionRatio":impressionRatio,
         "priority":"AD_PRIORITY_"+priority
       },
-      "type":type
+      "type":type,
+      "clickThroughUrl": {
+        "defaultLandingPage": true,
+        }      
     };
 
-  adResource.placementAssignments = [{"placementId":placementId}];
+  adResource.placementAssignments = [{"placementId":placementId,"active":true}];
 
-  var newAd = CampaignManager.Ads.insert(
-    adResource, profileID);
+  if (type =='AD_SERVING_CLICK_TRACKER_DYNAMIC') {
+        adResource.type='AD_SERVING_CLICK_TRACKER'
+        adResource.dynamicClickTracker=true
+        adResource.clickThroughUrl.defaultLandingPage=false
+        adResource.clickThroughUrl.customClickThroughUrl=landingPage
+        var newAd = CampaignManager.Ads.insert(
+        adResource, profileId);
+  } else if (!landingPage){
+        adResource.creativeRotation = {
+              "creativeAssignments":[{
+                  "sslCompliant": true,
+                  "creativeId": creativeId,
+                  "active": true,
+                  "clickThroughUrl": {
+                      "defaultLandingPage": true
+                      }
+        }]
+        } 
+      adResource.active = true
+      var newAd = CampaignManager.Ads.insert(
+        adResource, profileId);
+        
+        } else {
+          adResource.creativeRotation = {
+              "creativeAssignments":[{
+                  "sslCompliant": true,
+                  "creativeId": creativeId,
+                  "active": true,
+                  "clickThroughUrl": {
+                      "defaultLandingPage": false,
+                      "customClickThroughUrl": landingPage
+                      }
+        }]
+        }
+      adResource.active = true
+
+      var newAd = CampaignManager.Ads.insert(
+        adResource, profileId);
+  }  
   return newAd;
 }
 
@@ -350,10 +393,21 @@ function _createOnePlacement(ss, singlePlacementArray) {
   var pricingScheduleEndDate = Utilities.formatDate(
       singlePlacementArray[6], ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   var pricingSchedulePricingType = singlePlacementArray[7];
-  var tagFormats = (singlePlacementArray[8]).split(',');
-  for (var i = 0; i < tagFormats.length; i++) {
-    tagFormats[i] = (tagFormats[i].trim()).replace(/\r?\n|\r/g, ', ');
+  if (singlePlacementArray[8] =='DEFAULT'){
+    var tagFormats = [ 'PLACEMENT_TAG_TRACKING',
+       'PLACEMENT_TAG_CLICK_COMMANDS',
+       'PLACEMENT_TAG_IFRAME_JAVASCRIPT',
+       'PLACEMENT_TAG_INTERNAL_REDIRECT',
+       'PLACEMENT_TAG_TRACKING_JAVASCRIPT',
+       'PLACEMENT_TAG_JAVASCRIPT',
+       'PLACEMENT_TAG_TRACKING_IFRAME' ]
+  } else {
+      var tagFormats = (singlePlacementArray[8]).split(',');
+      for (var i = 0; i < tagFormats.length; i++) {
+        tagFormats[i] = (tagFormats[i].trim()).replace(/\r?\n|\r/g, ', ');
+        }
   }
+
 
   var placementResource = {
     "kind": "dfareporting#placement",
@@ -417,6 +471,7 @@ function _createOneLandingPage(ss, singleLandingPageArray) {
  * @see {@link SheetsApi} and {@link CampaignManagerApi}. ++ add creative.id somewhere in the status
  */
 function uploadCreatives() {
+
   var sheetsApi = new SheetsApi(SpreadsheetApp.getActiveSpreadsheet());
   var profileId = _fetchProfileId();
   var config = {data: {
@@ -424,15 +479,17 @@ function uploadCreatives() {
     startRow: 2,
     startCol: 1,
     advertiserId: 0,
-    creativeName: 1,
-    creativeDimensionsRaw: 2,
-    creativeAssetName: 3,
-    creativeAssetPath: 4,
-    backupImageName: 5,
-    backupImagePath: 6,
-    backupImageClickThroughUrl: 7,
+    campaignId:1,
+    creativeType: 2,
+    creativeName: 3,
+    creativeDimensionsRaw: 4,
+    creativeAssetName: 5,
+    creativeAssetPath: 6,
+    backupImageName: 7,
+    backupImagePath: 8,
+    backupImageClickThroughUrl: 9,
     },
-  status: {column: 8, columnId: 'I', done: 'DONE'}
+  status: {column: 10, columnId: 'K', done: 'DONE'}
   }
   var cmApi = new CampaignManagerApi(profileId, config.data);
 
@@ -440,7 +497,7 @@ function uploadCreatives() {
       config.data.sheetName, config.data.startRow, config.data.startCol);
 
   data.forEach(function(row, index) {
-    if (row[config.data.advertiserId] && !row[config.status.column]) {
+    if (row[config.data.advertiserId] && !row[config.status.column] && row[config.data.creativeType]=='HTML') {
       try {
         var creativeResponse = cmApi.insertCreative(row);
         sheetsApi.setCellValue(
@@ -459,161 +516,124 @@ function uploadCreatives() {
             `for Advertiser ${row[config.data.advertiserId]}! Check the logs ` +
             `at https://script.google.com/home/executions for more details.`);
         
-      }
-    } else SpreadsheetApp.getUi().alert('Finished creating the creatives!');
-  });
-}
-
-/**
- * aps: Repurposed old creatiCreatives() for tracking creatives
- * Read creatives information from the sheet and use DCM API to bulk create them
- * in the DCM Account.
- */ 
-function createTrackingCreatives() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(T_CREATIVES_SHEET);
-  var values = sheet.getDataRange().getValues();
-
-  for (var i = 1; i < values.length; i++) { // exclude header row
-    var rowNum = i+1;
-    var status = sheet.getDataRange().getCell(rowNum,3);
-    var first_col = sheet.getDataRange().getCell(rowNum,1);
-    if (!first_col.isBlank() && status.isBlank()){
-    var newCreative = _createOneTCreative(ss, values[i]);
-    sheet.getRange('C' + rowNum)
-        .setValue(newCreative.id)
-        .setBackground('lightgray');
     }
-  }
+    } else if (row[config.data.advertiserId] && !row[config.status.column] && row[config.data.creativeType]=='HTML_IMAGE') {
+      try {
+        var assetName = row[config.data.creativeAssetName];
+        var assetType = 'HTML_IMAGE';
+        var profileId = _fetchProfileId();
+        var campaignId = row[config.data.campaignId];
+        var advertiserId = row[config.data.advertiserId];
+        var assetDriveId = row[config.data.creativeAssetPath];
 
-  SpreadsheetApp.getUi().alert('Finished creating the tracking creatives!');
-}
+        var creativeName = row[config.data.creativeName];
+        var creativeType = 'DISPLAY';
+        
+        var creative = CampaignManager.newCreative();
+        creative.creativeAssets = [];
+        creative.name = creativeName;
+        creative.type = creativeType;
+        creative.advertiserId = advertiserId
 
-/**
- * A helper function which creates one creative via DCM API using information
- * from the sheet.
- * @param {object} ss Spreadsheet class object representing
- * current active spreadsheet
- * @param {Array} singleCreativeArray An array containing creative information
- * @return {object} Creative object
- */
-function _createOneTCreative(ss, singleCreativeArray){
-  var profileID = _fetchProfileId();
+        var creativeAssetId = CampaignManager.newCreativeAssetId();
+        creativeAssetId.name = assetName;
+        creativeAssetId.type = assetType;
 
-  var advertiserId = singleCreativeArray[0];
-  var name = singleCreativeArray[1];
+        var creativeAssetMetadata = CampaignManager.newCreativeAssetMetadata();
+        creativeAssetMetadata.assetIdentifier = creativeAssetId;
 
-  var creativeResource =  {
-    "name": name,
-    "advertiserId": advertiserId,
-    "active": true,
-    "type": "TRACKING_TEXT"
+        var creativeAsset = CampaignManager.newCreativeAsset();
+        creativeAsset.assetIdentifier = creativeAssetMetadata.assetIdentifier;
+        creativeAsset.role = 'PRIMARY';
+
+        var content = DriveApi.getFileByDriveId(assetDriveId);
+        var creativeAsset = CampaignManager.CreativeAssets.insert(
+        creativeAssetMetadata, profileId, advertiserId, content);
+
+        
+        creative.creativeAssets.push(creativeAsset);
+
+        var creativeSize = CampaignManager.newSize();
+        creativeSize.raw = row[config.data.creativeDimensionsRaw].split('x');
+        creativeSize.width = creativeSize.raw[0];
+        creativeSize.height = creativeSize.raw[1];
+        creative.size = creativeSize;
+
+        creative.active = true;
+
+        var newCreative = CampaignManager.Creatives
+            .insert(creative, profileId);
+        var associationResource = {
+              "creativeId": newCreative.id,
+              "kind": "dfareporting#campaignCreativeAssociation"
+                    }
+        CampaignManager.CampaignCreativeAssociations      
+            .insert(associationResource,profileId,campaignId);
+        sheetsApi.setCellValue(
+            config.data.sheetName,
+            config.status.columnId + (config.data.startRow + index),
+            newCreative.id); /** aps: replaced "done" status with creative ID to match overall theme */
+        sheetsApi.setCellColourID(
+          config.data.sheetName,
+          config.status.columnId + (config.data.startRow + index) /** aps: add colour to creative ID to match overall theme */
+        )
+            } catch (e) {
+        
+        console.log(e);
+        throw new Error(
+            `Failed to upload Creative ${row[config.data.creativeName]} ` +
+            `for Advertiser ${row[config.data.advertiserId]}! Check the logs ` +
+            `at https://script.google.com/home/executions for more details.`);
+            }
+        }  else if (row[config.data.advertiserId] && !row[config.status.column] && row[config.data.creativeType]=='TRACKING_TEXT') {
+          try {
+            var profileId = _fetchProfileId();
+            var campaignId = row[config.data.campaignId];
+
+            var advertiserId = row[config.data.advertiserId];
+            var name = row[config.data.creativeName];
+
+            var creativeResource =  {
+              "name": name,
+              "advertiserId": advertiserId,
+              "active": true,
+              "type": "TRACKING_TEXT"
+            };
+
+            var newCreative = CampaignManager.Creatives
+                .insert(creativeResource, profileId);
+            
+            var associationResource = {
+              "creativeId": newCreative.id,
+              "kind": "dfareporting#campaignCreativeAssociation"
+                    } 
+
+            CampaignManager.CampaignCreativeAssociations      
+                  .insert(associationResource,profileId,campaignId);
+
+            sheetsApi.setCellValue(
+                config.data.sheetName,
+                config.status.columnId + (config.data.startRow + index),
+                newCreative.id); /** aps: replaced "done" status with creative ID to match overall theme */
+            sheetsApi.setCellColourID(
+              config.data.sheetName,
+              config.status.columnId + (config.data.startRow + index) /** aps: add colour to creative ID to match overall theme */
+        )
+            
+          } catch (e) {
+        
+        console.log(e);
+        throw new Error(
+            `Failed to upload Creative ${row[config.data.creativeName]} ` +
+            `for Advertiser ${row[config.data.advertiserId]}! Check the logs ` +
+            `at https://script.google.com/home/executions for more details.`);
+            }
+        }
+        }
+  ); 
+  SpreadsheetApp.getUi().alert('Finished creating the creatives!');
   };
-
-  var newCreative = CampaignManager.Creatives
-      .insert(creativeResource, profileID);
-  return newCreative;
-
-}
-
-/** 
- * 
- * Campaign - Creative Association Set
- * 
- * */
-function createCampCreativeAss() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(CAMP_CREATIVES_SHEET);
-  var values = sheet.getDataRange().getValues();
-
-  for (var i = 1; i < values.length; i++) { // exclude header row
-    var rowNum = i+1;
-    var status = sheet.getDataRange().getCell(rowNum,3);
-    var first_col = sheet.getDataRange().getCell(rowNum,1);
-    if (!first_col.isBlank() && status.isBlank()){
-      _createOneCampCreativeAss(ss, values[i]);
-      sheet.getRange('C' + rowNum)
-          .setValue("DONE")
-          .setBackground('lightgray');
-    }
-  }
-
-  SpreadsheetApp.getUi().alert('Finished creating the tracking creatives!');
-}
-
-function _createOneCampCreativeAss(ss,singleAssArray){
-  var profileId = _fetchProfileId();
-
-  var campaignId = singleAssArray[0];
-  var creativeId = singleAssArray[1];
-
-  var associationResource = {
-    "creativeId": creativeId,
-    "kind": "dfareporting#campaignCreativeAssociation"
-  }
-  var newCampCreAss = CampaignManager.CampaignCreativeAssociations
-        .insert(associationResource,profileId,campaignId)
-  return newCampCreAss
-}
-
-
-/**
- * 
- * Ads - Creatives Assignment set
- * 
- */
-function createAdsCreativeAss() {
-  
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(ADS_CREATIVES_SHEET);
-  var values = sheet.getDataRange().getValues();
-  
-  
-  for (var i = 1; i < values.length; i++) { // exclude header row
-    var rowNum = i+1;
-    var status = sheet.getDataRange().getCell(rowNum,3);
-    var first_col = sheet.getDataRange().getCell(rowNum,1);
-    if (!first_col.isBlank() && status.isBlank()){
-      _createOneAdsCreativeAss(ss, values[i]);
-      sheet.getRange('C' + rowNum)
-        .setValue("DONE")
-        .setBackground('lightgray');
-    }
-  }
-
-  SpreadsheetApp.getUi().alert('Finished creating the tracking creatives!');
-}
-
-function _createOneAdsCreativeAss(ss,singleAdAssArray) {
-  var profileId = _fetchProfileId();
-  var adsId = singleAdAssArray[0];
-  var creativeId = singleAdAssArray[1];
-
-  var getAds = CampaignManager.Ads.get(profileId,adsId);
-  
-  /** assign creative */
-  var nCA ={}
-  if (getAds.creativeRotation.creativeAssignments == undefined) {
-    var nCA = 0
-    getAds.creativeRotation.creativeAssignments = []
-  } else {
-    var nCA = getAds.creativeRotation.creativeAssignments.length
-  }
-  getAds.creativeRotation.creativeAssignments[nCA] = {
-  sslCompliant: true,
-  creativeId: creativeId,
-  active: false,
-  clickThroughUrl: {
-    defaultLandingPage: true 
-    } 
-  }
-  var newAdCreAss = CampaignManager.Ads
-          .update(getAds,profileId)
-
-  return newAdCreAss
-}
-
-
+ 
 /** Listings */
 
 /**
@@ -724,3 +744,51 @@ function listCreatives() {
   }
 }
 
+/** 
+ * List creatives on a certain advertiser
+ * 
+ */
+function listLandingPages() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SITES_SHEET);
+  var profileId = _fetchProfileId();
+
+  // setup header row
+  sheet.getRange('N1')
+      .setValue('Landing Page Name')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('O1')
+      .setValue('Landing Page ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('P1')
+      .setValue('Landing Page URL')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('Q1')
+      .setValue('Advertiser ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+
+  var landingPages = CampaignManager.AdvertiserLandingPages.list(profileId).landingPages;
+  for (var i = 0; i < landingPages.length; i++) {
+    var currentObject = landingPages[i];
+    var rowNum = i+2;
+    sheet.getRange('N' + rowNum)
+        .setValue(currentObject.name)
+        .setBackground('lightblue');
+    sheet.getRange('O' + rowNum)
+        .setNumberFormat('@')
+        .setValue(currentObject.id)
+        .setBackground('lemonchiffon');
+    sheet.getRange('P' + rowNum)
+        .setNumberFormat('@')
+        .setValue(currentObject.url)
+        .setBackground('lavenderblush');
+    sheet.getRange('Q' + rowNum)
+        .setNumberFormat('@')
+        .setValue(currentObject.advertiserId)
+        .setBackground('lavenderblush');
+  } 
+}

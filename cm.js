@@ -139,16 +139,25 @@ class CampaignManagerApi {
     creative.type = 'DISPLAY';
     creative.active = true;
     creative.creativeAssets = [];
+    var campaignId = row[this.dataConfig_.campaignId];
+   
 
     this.addMainCreative_(row, creative);
     this.addCreativeBackupImage_(row, creative);
 
     var creativeResponse =
         CampaignManager.Creatives.insert(creative, this.profileId_);
+     var associationResource = {
+              "creativeId": creativeResponse.id,
+              "kind": "dfareporting#campaignCreativeAssociation"
+                    };
+
+    var creativeAss = CampaignManager.CampaignCreativeAssociations      
+            .insert(associationResource,this.profileId_,campaignId);    
 
     console.log(
         `Created HTML5 display creative with ID ` +
-        `[${creativeResponse.id}] and Name [${creativeResponse.name}]`);
+        `[${creativeResponse.id}],[${creativeAss.creativeId}] and Name [${creativeResponse.name}]`);
     return creativeResponse
   }
 }

@@ -27,18 +27,16 @@ var AUTO_ATT_HEADER_COLOR = 'lightgreen'
 // Data range values
 var DCMUserProfileID = 'DCMUserProfileID';
 var CreativeFolderID = 'CreativeFolderID';
+var TimeZone = 'TimeZone'
 
 // sheet names
 var SETUP_SHEET = 'Setup';
-var SITES_SHEET = 'Sites';
+var SITES_SHEET = 'Lists';
 var CAMPAIGNS_SHEET = 'Campaigns';
 var PLACEMENTS_SHEET = 'Placements';
 var ADS_SHEET = 'Ads';
 var CREATIVES_SHEET = 'Creatives';
-var T_CREATIVES_SHEET = 'Tracking Creatives';
 var LANDING_PAGES_SHEET = 'LandingPages';
-var CAMP_CREATIVES_SHEET = 'Campaign Creatives Assocations'
-var ADS_CREATIVES_SHEET = 'Ads Creatives Assignment'
 
 /**
  * Helper function to get DCM Profile ID.
@@ -78,14 +76,11 @@ function initializeSheet_(sheetName, lock) {
 function setupTabs() {
   _setupSetupSheet();
   _setupSitesSheet();
+  _setupLandingPagesSheet();
   _setupCampaignsSheet();
   _setupPlacementsGroupsSheet();
-  _setupAdsSheet();
-  _setupLandingPagesSheet();
   _setupCreativesSheet(); /** aps: original renamed as _setupCreativesSheet_OLD();*/
-  _setupTCreativesSheet();
-  _setupCCreativesSheet();
-  _setupACreativesSheet();
+  _setupAdsSheet();
   
 }
 
@@ -99,13 +94,18 @@ function _setupSetupSheet() {
   
   sheet.getRange('B2').setValue("DCM Bulk Trafficking");
   sheet.getRange('B2:C2')
+      .mergeAcross() /** aps: aesthetics... */
       .setFontWeight('bold')
       .setWrap(true)
       .setBackground(AUTO_POP_HEADER_COLOR)
       .setFontSize(12);
 
   sheet.getRange('B3')
-      .setValue('For any questions contact panesh@ or jenicarawtani@ or toczos@');
+      .setValue('For any questions contact panesh@ or jenicarawtani@ or toczos@'); /**original authors */
+  sheet.getRange('B3:C3')
+      .mergeAcross()
+      .setValue('For any questions contact andaru.s@fivestones.net')      
+      .setWrap(true);
   
   var instructions = [
     "Initial setup:",
@@ -182,6 +182,40 @@ function _setupSetupSheet() {
 
   sheet.getRange("B7:C7").setFontWeight("bold").setWrap(true);
   
+  /** aps: Time Zone should go here */ 
+  sheet.getRange('B9').setValue("Time Zone")
+                      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('C9').setBackground(USER_INPUT_HEADER_COLOR);
+
+  sheet.getRange("B9:C9").setFontWeight("bold").setWrap(true);
+
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList([
+    'GMT+7',
+    'GMT+8',
+    'GMT+9',
+    'GMT+10',
+    'GMT+11',
+    'GMT+12',
+    'GMT-11',
+    'GMT-10',
+    'GMT-9',
+    'GMT-8',
+    'GMT-7',
+    'GMT-6',
+    'GMT-5',
+    'GMT-4',
+    'GMT-3',
+    'GMT-2',
+    'GMT-1',
+    'GMT',
+    'GMT+1',
+    'GMT+2',
+    'GMT+3',
+    'GMT+4',
+    'GMT+5',
+    'GMT+6'
+]).build();
+  sheet.getRange('C9').setDataValidation(rule)
   return sheet;
 
 }
@@ -191,7 +225,7 @@ function _setupSetupSheet() {
  * @return {object} A handle to the sheet.
  */
 function _setupSitesSheet() {
-  var sheet = initializeSheet_(SITES_SHEET, true);
+  var sheet = initializeSheet_(SITES_SHEET, false);
 
   sheet.getRange('A1')
       .setValue('Site Name')
@@ -199,7 +233,53 @@ function _setupSitesSheet() {
   sheet.getRange('B1')
       .setValue('Directory Site ID')
       .setBackground(AUTO_POP_HEADER_COLOR);
-  sheet.getRange('A1:B1').setFontWeight('bold').setWrap(true);
+  sheet.getRange('D1')
+      .setValue('Advertiser Name')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('E1')
+      .setValue('Advertiser ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('G1')
+      .setValue('File Name')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('H1')
+      .setValue('File ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('J1')
+      .setValue('Creative Name')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('K1')
+      .setValue('Creative ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('L1')
+      .setValue('Advertiser ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('N1')
+      .setValue('Landing Page Name')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('O1')
+      .setValue('Landing Page ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('P1')
+      .setValue('Landing Page URL')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  sheet.getRange('Q1')
+      .setValue('Advertiser ID')
+      .setFontWeight('bold')
+      .setBackground('#a4c2f4');
+  
+  
+  sheet.getRange('A1:Q1').setFontWeight('bold').setWrap(true);
   return sheet;
 }
 
@@ -254,7 +334,9 @@ function _setupPlacementsGroupsSheet() {
   sheet.getRange('D1')
       .setValue('Compatibility*')
       .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('E1').setValue('Size*').setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('E1')
+      .setValue('Size*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('F1')
       .setValue('Pricing Schedule Start Date*')
       .setBackground(USER_INPUT_HEADER_COLOR);
@@ -272,6 +354,18 @@ function _setupPlacementsGroupsSheet() {
        .setBackground(AUTO_POP_HEADER_COLOR);
 
   sheet.getRange('A1:J1').setFontWeight('bold').setWrap(true);
+
+  /**
+   * Set data validation rules
+   */
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(['APP','APP_INTERSTITIAL','DISPLAY','DISPLAY_INTERSTITIAL','IN_STREAM_AUDIO','IN_STREAM_VIDEO']).build();
+  sheet.getRange('D2:D100').setDataValidation(rule)
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(['PRICING_TYPE_CPM','PRICING_TYPE_CPA','PRICING_TYPE_CPC','PRICING_TYPE_CPM_ACTIVEVIEW','PRICING_TYPE_FLAT_RATE_CLICKS',
+  'PRICING_TYPE_FLAT_RATE_IMPRESSIONS']).build();
+  sheet.getRange('H2:H100').setDataValidation(rule)
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(['DEFAULT','PLACEMENT_TAG_STANDARD','PLACEMENT_TAG_IFRAME_JAVASCRIPT','PLACEMENT_TAG_IFRAME_ILAYER','PLACEMENT_TAG_INTERNAL_REDIRECT','PLACEMENT_TAG_JAVASCRIPT','PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT','PLACEMENT_TAG_INTERSTITIAL_INTERNAL_REDIRECT','PLACEMENT_TAG_INTERSTITIAL_JAVASCRIPT','PLACEMENT_TAG_CLICK_COMMANDS','PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH','PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_3','PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_4','PLACEMENT_TAG_TRACKING','PLACEMENT_TAG_TRACKING_IFRAME','PLACEMENT_TAG_TRACKING_JAVASCRIPT']).build();
+  sheet.getRange('I2:I100').setDataValidation(rule)
+
   return sheet;
 }
 
@@ -300,53 +394,32 @@ function _setupAdsSheet() {
   sheet.getRange('F1')
       .setValue('Priority*')
       .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('G1').setValue('Type*').setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('G1')
+      .setValue('Type*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('H1')
       .setValue('Placement ID*')
       .setBackground(USER_INPUT_HEADER_COLOR);
-
-  sheet.getRange('I1').setValue('Ad ID (auto-populated; do not edit)')
+  sheet.getRange('I1')
+      .setValue('Creative ID*')
+      .setBackground(USER_INPUT_HEADER_COLOR);   
+  sheet.getRange('J1')
+      .setValue('Landing Page URL (optional)')
+      .setBackground(USER_INPUT_HEADER_COLOR);    
+  sheet.getRange('K1').setValue('Ad ID (auto-populated; do not edit)')
        .setBackground(AUTO_POP_HEADER_COLOR);
 
-  sheet.getRange('A1:I1').setFontWeight('bold').setWrap(true);
+  sheet.getRange('A1:K1').setFontWeight('bold').setWrap(true);
+  
+  /**
+   * Set data validation rules
+   */
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(['AD_SERVING_STANDARD_AD','AD_SERVING_CLICK_TRACKER_DYNAMIC','AD_SERVING_TRACKING']).build();
+  sheet.getRange('G2:G100').setDataValidation(rule)
+  
   return sheet;
 
 }
-
-/**
- * Initialize the Creatives sheet and its header row
- * @return {object} A handle to the sheet.
- */
-function _setupCreativesSheet_OLD() {
-  var sheet = initializeSheet_(CREATIVES_SHEET, false);
-
-  sheet.getRange('A1')
-      .setValue('Advertiser ID*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('B1')
-      .setValue('Creative Name*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('C1').setValue('Width*').setBackground(
-      USER_INPUT_HEADER_COLOR);
-  sheet.getRange('D1').setValue('Height*').setBackground(
-      USER_INPUT_HEADER_COLOR);
-  sheet.getRange('E1')
-      .setValue('Creative Type*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('F1')
-      .setValue('Creative Asset Type*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('G1')
-      .setValue('Creative Asset Name*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('H1')
-      .setValue('Creative ID (auto-populated; do not edit)')
-      .setBackground(AUTO_POP_HEADER_COLOR);
-
-  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
-  return sheet;
-}
-
 
 /**
  * Initialize the LandingPages sheet and its header row
@@ -384,90 +457,43 @@ function _setupCreativesSheet() {
       .setValue('Advertiser ID*')
       .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('B1')
-      .setValue('Creative Name*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('C1').setValue('Creative Size ("width"x"height")*').setBackground(
-      USER_INPUT_HEADER_COLOR);
-  sheet.getRange('D1').setValue('Creative Asset Name*').setBackground(
-      USER_INPUT_HEADER_COLOR);
-  sheet.getRange('E1')
-      .setValue('Creative Asset Path (Drive ID)*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('F1')
-      .setValue('Creative Backup Image Name*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('G1')
-      .setValue('Creative Backup Image Path (Drive ID)*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('H1')
-      .setValue('Creative Backup Image Custom Landing Page URL (optional)*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('I1')
-      .setValue('Creative ID (auto-populated; do not edit)')
-      .setBackground(AUTO_POP_HEADER_COLOR);
-
-  sheet.getRange('A1:I1').setFontWeight('bold').setWrap(true);
-  return sheet;
-}
-
-/**
- * Initialize the Tracking Creatives sheet and its header row
- * @return {object} A handle to the sheet. */
- function _setupTCreativesSheet() {
-  var sheet = initializeSheet_(T_CREATIVES_SHEET, false);
-
-  sheet.getRange('A1')
-      .setValue('Advertiser ID*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('B1')
-      .setValue('Creative Name*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('C1')
-      .setValue('Creative ID (auto-populated; do not edit)')
-      .setBackground(AUTO_POP_HEADER_COLOR);
-
-  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
-  return sheet;
-}
-
-/** 
- * Campaign-Creative Association Sheets
- * 
- */
-function _setupCCreativesSheet() {
-  var sheet = initializeSheet_(CAMP_CREATIVES_SHEET, false);
-
-  sheet.getRange('A1')
       .setValue('Campaign ID*')
       .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('B1')
-      .setValue('Creative ID*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
   sheet.getRange('C1')
-      .setValue('Status (auto-populated; do not edit)')
-      .setBackground(AUTO_POP_HEADER_COLOR);
-
-  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
-  return sheet;
-}
-
-function _setupACreativesSheet() {
-  var sheet = initializeSheet_(ADS_CREATIVES_SHEET, false);
-
-  sheet.getRange('A1')
-      .setValue('Ads ID*')
+      .setValue('Creative Type')
       .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('B1')
-      .setValue('Creative ID*')
-      .setBackground(USER_INPUT_HEADER_COLOR);
-  sheet.getRange('C1')
-      .setValue('Status (auto-populated; do not edit)')
-      .setBackground(AUTO_POP_HEADER_COLOR);
   sheet.getRange('D1')
-      .setValue('Please Make Sure Ads and Creatives Type Match')
-      .setBackground(AUTO_ATT_HEADER_COLOR);
+      .setValue('Creative Name*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('E1').setValue('Creative Size ("width"x"height")*').setBackground(
+      USER_INPUT_HEADER_COLOR);
+  sheet.getRange('F1').setValue('Creative Asset Name*').setBackground(
+      USER_INPUT_HEADER_COLOR);
+  sheet.getRange('G1')
+      .setValue('Creative Asset Path (Drive ID)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('H1')
+      .setValue('Creative Backup Image Name*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('I1')
+      .setValue('Creative Backup Image Path (Drive ID)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('J1')
+      .setValue('Creative Backup Image Custom Landing Page URL (optional)*')
+      .setBackground(USER_INPUT_HEADER_COLOR);
+  sheet.getRange('K1')
+      .setValue('Creative ID (auto-populated; do not edit)')
+      .setBackground(AUTO_POP_HEADER_COLOR);
+  
+  sheet.getRange('A1:K1').setFontWeight('bold').setWrap(true);
+  
+  /**
+   * Set data validation rules
+   */
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(['HTML', 'HTML_IMAGE','TRACKING_TEXT']).build();
+  sheet.getRange('C2:C100').setDataValidation(rule)
 
-  sheet.getRange('A1:H1').setFontWeight('bold').setWrap(true);
+
   return sheet;
 }
 
@@ -479,5 +505,22 @@ function _fetchFolderId() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var range = ss.getRangeByName(CreativeFolderID);
   return range.getValue();
+}
+
+/**
+ * Helper function to get Time Zone.
+ * @return {object} Time Zone.
+ */
+function _fetchTZ() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var range = ss.getRangeByName(TimeZone);
+  var gmt = range.getValue()
+  if (gmt.includes('+')){
+    return gmt.replace('+','-') /** aps: invert GMT to match the destination Time Zone */
+  } else {
+    return gmt.replace('+','-')
+  }
+  
+  
 }
 

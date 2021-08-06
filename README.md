@@ -1,9 +1,28 @@
 **_Disclaimer:These code samples being shared are not official Google_**
 **_products and are not formally supported._**
 
-# **DCM Bulk Trafficking Tool**
+# **CM Bulk Trafficking Tool**
 
-An example tool to perform bulk tasks using DCM API.
+This is a form of Google's CM bulk trafficking tools. At the moment they have not updated the code for over 3 years, we are just picking up where they finished. 
+
+Added features:
+
+- set drop down for types
+- Upload creatives from drive folder, supported types:
+    - HTML5
+    - IMAGE
+    - Tracking Creatives
+- creative connect to campaign (priority) 
+- creative connect to  ads (optional)
+- listing:
+    - creative
+    - advertiser
+    - creative file id from google drive folder
+    - creative tracking creation
+- only run empty status/IDs
+- add campaign ID to creative creation
+- add creative id to ads creation
+- UTC time for destination
 
 ## OVERVIEW
 
@@ -43,6 +62,12 @@ tool (see the corresponding step of Initial Setup section below).
 *   Input the DCM Profile ID in the setup tab (i.e. at cell C5) then select
     _Data_ from the sheet menu and select _Named Ranges...._ to set the title
     _DCMUserProfileID_ and value _Setup!C5_
+*   Input the Creative Folder ID in the setup tab (cell C7)then select
+    _Data_ from the sheet menu and select _Named Ranges...._ to set the title
+    _CreativeFolderID_ and value _Setup!C7_
+*   Select the UTC time zone drop down 	 	in the setup tab (cell C9)then select
+    _Data_ from the sheet menu and select _Named Ranges...._ to set the title
+    _TimeZone_ and value _Setup!C9_
 
 ## USAGE
 
